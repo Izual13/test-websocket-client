@@ -13,26 +13,27 @@ import org.springframework.web.socket.sockjs.client.Transport;
 import org.springframework.web.socket.sockjs.client.WebSocketTransport;
 
 import java.lang.reflect.Type;
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.IntStream;
 
 @SpringBootApplication
 public class WSClient {
+    public static final String url = "ws://localhost:8080/socket";
 
     public static void main(String[] args) throws ExecutionException, InterruptedException {
 
         SpringApplication.run(WSClient.class, args);
-        List<Transport> transports = new ArrayList<>(2);
-        StandardWebSocketClient webSocketClient = new StandardWebSocketClient();
-        transports.add(new WebSocketTransport(webSocketClient));
 
-
-        SockJsClient sockJsClient = new SockJsClient(transports);
-        WebSocketStompClient stompClient = new WebSocketStompClient(sockJsClient);
-        String url = "ws://localhost:8080/socket";
-        stompClient.connect(url, new StompSessionHandler());
-
+        IntStream.range(0, 5000).boxed().forEach((x) -> {
+            System.out.println(x);
+            List<Transport> transports = Collections.singletonList(new WebSocketTransport(new StandardWebSocketClient()));
+            SockJsClient sockJsClient = new SockJsClient(transports);
+            WebSocketStompClient stompClient = new WebSocketStompClient(sockJsClient);
+            stompClient.connect(url, new StompSessionHandler());
+        });
+        System.out.println("connected");
     }
 
 
@@ -41,13 +42,17 @@ public class WSClient {
         public void afterConnected(StompSession session, StompHeaders connectedHeaders) {
             super.afterConnected(session, connectedHeaders);
             session.subscribe("/topic", new StringHandler());
-            System.out.println("connected");
+        }
+
+        @Override
+        public void handleTransportError(StompSession session, Throwable exception) {
+            super.handleTransportError(session, exception);
+            exception.printStackTrace();
         }
 
         @Override
         public void handleException(StompSession session, StompCommand command, StompHeaders headers, byte[] payload, Throwable exception) {
             super.handleException(session, command, headers, payload, exception);
-
             exception.printStackTrace();
         }
 
@@ -67,8 +72,8 @@ public class WSClient {
 
         @Override
         public void handleFrame(StompHeaders headers, Object payload) {
-            super.handleFrame(headers, payload);
-            System.out.println(new String((byte[]) payload));
+            byte[] bytes = (byte[]) payload;
+            System.out.println(bytes.length);
         }
     }
 }
