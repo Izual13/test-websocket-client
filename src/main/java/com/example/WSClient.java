@@ -2,6 +2,8 @@ package com.example;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.web.DispatcherServletAutoConfiguration;
+import org.springframework.boot.autoconfigure.web.WebMvcAutoConfiguration;
 import org.springframework.messaging.simp.stomp.StompCommand;
 import org.springframework.messaging.simp.stomp.StompHeaders;
 import org.springframework.messaging.simp.stomp.StompSession;
@@ -15,19 +17,18 @@ import org.springframework.web.socket.sockjs.client.WebSocketTransport;
 import java.lang.reflect.Type;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 import java.util.stream.IntStream;
 
-@SpringBootApplication
+@SpringBootApplication(exclude = {DispatcherServletAutoConfiguration.class, WebMvcAutoConfiguration.class})
 public class WSClient {
-    public static final String url = "ws://localhost:8080/socket";
+    private static final String url = "ws://localhost:8080/socket";
+    private static final int COUNT = 5000;
 
-    public static void main(String[] args) throws ExecutionException, InterruptedException {
+    public static void main(String[] args) {
 
         SpringApplication.run(WSClient.class, args);
-
-        IntStream.range(0, 5000).boxed().forEach((x) -> {
-            System.out.println(x);
+        System.out.println(COUNT);
+        IntStream.range(0, COUNT).parallel().forEach((x) -> {
             List<Transport> transports = Collections.singletonList(new WebSocketTransport(new StandardWebSocketClient()));
             SockJsClient sockJsClient = new SockJsClient(transports);
             WebSocketStompClient stompClient = new WebSocketStompClient(sockJsClient);
